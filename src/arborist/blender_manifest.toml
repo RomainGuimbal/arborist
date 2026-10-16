@@ -19,6 +19,7 @@ copyright = [
 ]
 platforms = [
     "macos-arm64",
+    "windows-x64",
 ]
 wheels = [
     "./wheels/click-8.5.0-py3-none-any.whl",
