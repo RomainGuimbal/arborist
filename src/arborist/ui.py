@@ -30,7 +30,11 @@ class ARBORIST_PT_main(Panel):
 
         # Export ---------------------------------------------------------
         box = layout.box()
-        box.operator("arborist.export_to_code", icon="EXPORT")
+        row = box.row()
+        row.label(text="Export to Code")
+        sub = row.row(align=True)
+        sub.operator("arborist.export_to_code", icon="EXPORT", text="Selected")
+        sub.operator("node.arborist_export_all", text="All")
         col = box.column(align=True)
         col.prop(p, "selected_tree_only")
         col.prop(p, "min_chain_length")

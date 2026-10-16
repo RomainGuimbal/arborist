@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import bpy
-from bpy.props import EnumProperty
+from bpy.props import EnumProperty, StringProperty, BoolProperty
 from bpy.types import Operator
 
 from . import live, utils
@@ -71,6 +71,59 @@ class ARBORIST_OT_export_to_code(Operator):
         self.report(
             {"INFO"},
             f"Exported '{tree.name}' ({len(code.splitlines())} lines) to {target}",
+        )
+        return {"FINISHED"}
+
+
+class ARBORIST_OT_export_all(Operator):
+    """Export every node group as separate nodebpy python files in the input folder"""
+
+    bl_idname = "node.arborist_export_all"
+    bl_label = "Export All Nodes Groups as Python"
+    bl_options = {"REGISTER"}
+
+    filter_folder: BoolProperty(default=True, options={"HIDDEN"})  # type: ignore
+
+    directory: StringProperty(  # type: ignore
+        name="Directory",
+        description="Where python files will be saved",
+        subtype="DIR_PATH",
+    )
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        from nodebpy.export import to_python
+
+        if len(bpy.data.node_groups) == 0:
+            self.report({"ERROR"}, "No node tree to export")
+            return {"CANCELLED"}
+
+        for tree in bpy.data.node_groups:
+            p = props(context)
+
+            try:
+                code = to_python(
+                    tree,
+                    min_chain_length=p.min_chain_length,
+                    snapshot_positions=p.snapshot_positions,
+                    keep_reroutes=p.keep_reroutes,
+                    strict=p.strict,
+                    top_level="class" if p.selected_tree_only else "with",
+                    in_place=not p.selected_tree_only,
+                )
+            except Exception as e:
+                self.report({"ERROR"}, f"Export failed: {e}")
+                return {"CANCELLED"}
+
+            path = Path(self.directory) / (tree.name + ".py")
+            path.write_text(code)
+
+        self.report(
+            {"INFO"},
+            f"Exported {bpy.data.node_groups} node groups to {self.directory}",
         )
         return {"FINISHED"}
 
@@ -154,7 +207,12 @@ class ARBORIST_OT_new_text(Operator):
         return {"FINISHED"}
 
 
-CLASSES = (ARBORIST_OT_export_to_code, ARBORIST_OT_run_script, ARBORIST_OT_new_text)
+CLASSES = (
+    ARBORIST_OT_export_to_code,
+    ARBORIST_OT_export_all,
+    ARBORIST_OT_run_script,
+    ARBORIST_OT_new_text,
+)
 
 
 def register():
