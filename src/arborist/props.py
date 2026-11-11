@@ -31,6 +31,12 @@ class ArboristProperties(PropertyGroup):
         default="",
         subtype="FILE_PATH",
     )
+    directory: StringProperty(  # type: ignore
+        name="Directory",
+        description="Node's files emplacement",
+        default="",
+        subtype="DIR_PATH",
+    )
     auto_reload: BoolProperty(  # type: ignore
         name="Auto Reload",
         description="Re-run the script whenever the text block or file changes",

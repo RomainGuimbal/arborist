@@ -49,10 +49,10 @@ class ARBORIST_OT_export_to_code(Operator):
             return {"CANCELLED"}
 
         if p.source == "FILE":
-            if not p.file_path:
+            if not p.directory:
                 self.report({"ERROR"}, "Choose a file path to export into")
                 return {"CANCELLED"}
-            path = Path(bpy.path.abspath(p.file_path))
+            path = Path(bpy.path.abspath(p.directory)) / (tree.name + ".py")
             try:
                 path.write_text(code)
             except OSError as e:
