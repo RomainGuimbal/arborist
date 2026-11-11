@@ -43,6 +43,8 @@ class ARBORIST_PT_main(Panel):
         col.prop(p, "keep_reroutes")
         col.prop(p, "strict")
 
+        # My things ------------------------------------------------------
+
         # Run ------------------------------------------------------------
         box = layout.box()
         row = box.row(align=True)

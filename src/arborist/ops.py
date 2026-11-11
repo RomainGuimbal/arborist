@@ -118,8 +118,35 @@ class ARBORIST_OT_export_all(Operator):
                 self.report({"ERROR"}, f"Export failed: {e}")
                 return {"CANCELLED"}
 
-            path = Path(self.directory) / (tree.name + ".py")
-            path.write_text(code)
+            target_path = Path(self.directory) / (tree.name + ".py")
+            
+            # Ensure directory exists and check for files with the same name in subfolders
+            import shutil
+            if not target_path.parent.exists():
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Search for any existing files with this exact name under the directory tree
+            # These might be old exports that ended up in subdirectories
+            old_files = []
+            for root_dir, dirs, files in os.walk(target_path.parent):
+                for f in files:
+                    if f == (tree.name + ".py"):
+                        old_path = Path(root_dir) / f
+                        old_files.append(old_path)
+            
+            # Remove old files from subfolders (to prevent duplicates)
+            for old_file in old_files:
+                try:
+                    os.remove(old_file)
+                    self.report(
+                        {"INFO"},
+                        f"Removed old export from {old_file}",
+                    )
+                except Exception as e:
+                    pass
+            
+            # Write to the main target path (overwrites if exists there too)
+            target_path.write_text(code)
 
         self.report(
             {"INFO"},
@@ -205,6 +232,14 @@ class ARBORIST_OT_new_text(Operator):
         text.from_string("from nodebpy import geometry as g\n\n")
         p.text_block = text
         return {"FINISHED"}
+
+
+class ARBORIST_OT_push_node_to_py(Operator):
+    pass
+
+
+class ARBORIST_OT_pull_node_from_py(Operator):
+    pass
 
 
 CLASSES = (

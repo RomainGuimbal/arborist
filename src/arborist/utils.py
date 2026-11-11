@@ -1,7 +1,11 @@
 """Helpers that talk to the node editor and the scene."""
 
+# from pathlib import Path
+
 import bpy
 from bpy.types import Context, NodeTree
+
+from .props import props
 
 # A node tree's bl_idname -> the group node that references it, so a tree can
 # be dropped into an open editor as a single group node.
@@ -124,3 +128,45 @@ def redraw_node_editors() -> None:
         for area in window.screen.areas:
             if area.type == "NODE_EDITOR":
                 area.tag_redraw()
+
+
+# def push_node_to_py(nodegroup: bpy.types.NodeGroup, lib: Path, overwrite=True) -> Path:
+#     """
+#     Save the input node groups to python files using nodebpy
+
+#     lib : the path to the global node folder.
+#     It saves it there only if no file with the same name is found in subfolders.
+#     If there is one, use its path instead. This allows organization
+#     """
+#     from nodebpy.export import to_python
+
+#     def push(group: bpy.types.NodeGroup) -> Path:
+#         matches = sorted(lib.rglob(f"{group.name}.py"))
+#         path = matches[0] if matches else lib / f"{group.name}.py"
+#         if path.exists() and not overwrite:
+#             return path
+#         path.parent.mkdir(parents=True, exist_ok=True)
+#         code = to_python(group, top_level="class", in_place=True, props)
+#         path.write_text(code)
+#         return path
+
+#     # Nested groups get their own files first, so each file's imports resolve.
+#     for nested in getattr(nodegroup, "node_groups", ()):
+#         push(nested)
+#     return push(nodegroup)
+
+
+# def pull_node_from_py(py_nodegroup: Path, overwrite=True):
+#     """Convert back nodebpy node file into a Blender node group"""
+#     from nodebpy.live import run_source
+
+#     path = Path(bpy.path.abspath(str(py_nodegroup)))
+#     if not path.suffix:
+#         path = path.with_suffix(".py")
+#     if not path.exists():
+#         raise FileNotFoundError(f"No nodebpy file at {path}")
+
+#     existing = bpy.data.node_groups.get(path.stem)
+#     if existing is None or overwrite:
+#         run_source(path.read_text(), filename=str(path))
+#         redraw_node_editors()
