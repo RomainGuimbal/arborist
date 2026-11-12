@@ -203,6 +203,7 @@ class ARBORIST_OT_pull_node_from_py(Operator):
 
         for t in selected_trees:
             utils.pull_node_from_py(t, repo, True)
+            t.use_fake_user = True
 
         pushed_count = len(selected_trees)
         if pushed_count == 1:
