@@ -130,7 +130,10 @@ def redraw_node_editors() -> None:
 
 
 def push_node_to_py(
-    nodegroup: bpy.types.NodeGroup, lib: Path, overwrite=True, p=None
+    nodegroup: bpy.types.NodeGroup,
+    lib: Path,
+    overwrite=True,
+    p=None,
 ) -> Path:
     """
     Save the input node groups to python files using nodebpy
@@ -142,7 +145,6 @@ def push_node_to_py(
     from nodebpy.export import to_python
 
     def push(tree: bpy.types.NodeGroup) -> Path:
-        # Use tree.name to get the actual filename, not str(tree) which produces <bpy_struct...>.py
         matches = sorted(lib.rglob(glob.escape(tree.name) + ".py"))
         path = matches[0] if matches else lib / f"{tree.name}.py"
         if path.exists() and not overwrite:
@@ -152,9 +154,9 @@ def push_node_to_py(
             tree,
             min_chain_length=p.min_chain_length,
             snapshot_positions=p.snapshot_positions,
-            keep_reroutes=p.keep_reroutes,
+            keep_reroutes=p.snapshot_positions,  # deliberate to suppresses disable_arrange()
             strict=p.strict,
-            top_level="class" if p.selected_tree_only else "with",  # TODO Clarify here
+            top_level="class",
             in_place=not p.selected_tree_only,
         )
         path.write_text(code)
@@ -167,21 +169,7 @@ def push_node_to_py(
 
 
 def pull_node_from_py(tree: bpy.types.NodeGroup, lib: Path, overwrite=True):
-    """Convert back nodebpy node file into a Blender node group.
-
-    Finds the Python file for the given nodegroup in the library folder.
-
-    Args:
-        group: The Blender nodegroup to load
-        lib: Path to the library folder containing .py files
-        overwrite: If False, returns existing path if already loaded
-
-    Returns:
-        The path to the loaded Python file
-
-    Raises:
-        FileNotFoundError: If no matching .py file is found for the group name
-    """
+    """Convert back nodebpy node file into a Blender node group."""
     from nodebpy.live import run_source
 
     name = tree.name

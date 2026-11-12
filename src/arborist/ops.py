@@ -161,10 +161,13 @@ class ARBORIST_OT_push_node_to_py(Operator):
     bl_label = "Push Node Trees"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(self, context):
+        p = props(context)
+        return p.repository
+
     def execute(self, context):
         p = props(context)
-        if not p.repository:
-            raise KeyError("No repository selected")
         selected_trees = [
             n.node_tree
             for n in context.space_data.edit_tree.nodes
@@ -190,10 +193,13 @@ class ARBORIST_OT_pull_node_from_py(Operator):
     bl_label = "Pull Node Trees"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(self, context):
+        p = props(context)
+        return p.repository
+
     def execute(self, context):
         p = props(context)
-        if not p.repository:
-            raise KeyError("No repository selected")
         selected_trees = [
             n.node_tree
             for n in context.space_data.edit_tree.nodes
@@ -201,13 +207,13 @@ class ARBORIST_OT_pull_node_from_py(Operator):
         ]
         repo = Path(bpy.path.abspath(p.repository))
 
+        first_name = selected_trees[0].name
         for t in selected_trees:
             utils.pull_node_from_py(t, repo, True)
-            t.use_fake_user = True
 
         pushed_count = len(selected_trees)
         if pushed_count == 1:
-            self.report({"INFO"}, f"{selected_trees[0].name} pulled")
+            self.report({"INFO"}, f"{first_name} pulled")
         else:
             self.report({"INFO"}, f"{pushed_count} pullled trees")
         return {"FINISHED"}
