@@ -1,7 +1,10 @@
 """Helpers that talk to the node editor and the scene."""
 
+import glob
+from pathlib import Path
+
 import bpy
-from bpy.types import Context, NodeTree
+from bpy.types import Context, NodeTree  # type: ignore
 
 # A node tree's bl_idname -> the group node that references it, so a tree can
 # be dropped into an open editor as a single group node.
@@ -124,3 +127,75 @@ def redraw_node_editors() -> None:
         for area in window.screen.areas:
             if area.type == "NODE_EDITOR":
                 area.tag_redraw()
+
+
+def push_node_to_py(
+    nodegroup: bpy.types.NodeGroup, lib: Path, overwrite=True, p=None
+) -> Path:
+    """
+    Save the input node groups to python files using nodebpy
+
+    lib : the path to the global node folder.
+    It saves it there only if no file with the same name is found in subfolders.
+    If there is one, use its path instead. This allows organization
+    """
+    from nodebpy.export import to_python
+
+    def push(tree: bpy.types.NodeGroup) -> Path:
+        # Use tree.name to get the actual filename, not str(tree) which produces <bpy_struct...>.py
+        matches = sorted(lib.rglob(glob.escape(tree.name) + ".py"))
+        path = matches[0] if matches else lib / f"{tree.name}.py"
+        if path.exists() and not overwrite:
+            return path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        code = to_python(
+            tree,
+            min_chain_length=p.min_chain_length,
+            snapshot_positions=p.snapshot_positions,
+            keep_reroutes=p.keep_reroutes,
+            strict=p.strict,
+            top_level="class" if p.selected_tree_only else "with",  # TODO Clarify here
+            in_place=not p.selected_tree_only,
+        )
+        path.write_text(code)
+        return path
+
+    # Nested groups get their own files first, so each file's imports resolve.
+    for nested in getattr(nodegroup, "node_groups", ()):
+        push(nested)
+    return push(nodegroup)
+
+
+def pull_node_from_py(tree: bpy.types.NodeGroup, lib: Path, overwrite=True):
+    """Convert back nodebpy node file into a Blender node group.
+
+    Finds the Python file for the given nodegroup in the library folder.
+
+    Args:
+        group: The Blender nodegroup to load
+        lib: Path to the library folder containing .py files
+        overwrite: If False, returns existing path if already loaded
+
+    Returns:
+        The path to the loaded Python file
+
+    Raises:
+        FileNotFoundError: If no matching .py file is found for the group name
+    """
+    from nodebpy.live import run_source
+
+    name = tree.name
+    matches = sorted(lib.rglob(glob.escape(name) + ".py"))
+    if not matches:
+        raise FileNotFoundError(f"No nodebpy file found in {lib} for group '{name}.py'")
+    path = matches[0]
+
+    # Check if already loaded and whether we should skip re-loading
+    existing = bpy.data.node_groups.get(name)
+    if not overwrite and existing is not None:
+        return path
+
+    run_source(path.read_text(), filename=str(path))
+    redraw_node_editors()
+
+    return path

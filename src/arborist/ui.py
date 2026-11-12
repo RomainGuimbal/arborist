@@ -1,7 +1,7 @@
 import time
 
-from bpy.types import Context, Panel, UILayout
-from bpy.utils import register_class, unregister_class
+from bpy.types import Context, Panel, UILayout  # type: ignore
+from bpy.utils import register_class, unregister_class  # type: ignore
 
 from .props import props
 
@@ -37,6 +37,14 @@ class ARBORIST_PT_main(Panel):
         col.prop(p, "snapshot_positions")
         col.prop(p, "keep_reroutes")
         col.prop(p, "strict")
+
+        # Push and Pull (not to git yet) ------------------------------------------------------
+        box = layout.box()
+        col = box.column(align=True)
+        col.prop(p, "repository", text="Repository")
+        row = box.row()
+        row.operator("node.arborist_push", text="Push")
+        row.operator("node.arborist_pull", text="Pull")
 
         # Run ------------------------------------------------------------
         box = layout.box()

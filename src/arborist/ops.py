@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import bpy
-from bpy.props import EnumProperty
-from bpy.types import Operator
+from bpy.props import EnumProperty  # type: ignore
+from bpy.types import Operator  # type: ignore
 
 from . import live, utils
 from .props import props
@@ -154,7 +154,71 @@ class ARBORIST_OT_new_text(Operator):
         return {"FINISHED"}
 
 
-CLASSES = (ARBORIST_OT_export_to_code, ARBORIST_OT_run_script, ARBORIST_OT_new_text)
+class ARBORIST_OT_push_node_to_py(Operator):
+    """Overwrite the python files corresponding to the selected nodes"""
+
+    bl_idname = "node.arborist_push"
+    bl_label = "Push Node Trees"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        p = props(context)
+        if not p.repository:
+            raise KeyError("No repository selected")
+        selected_trees = [
+            n.node_tree
+            for n in context.space_data.edit_tree.nodes
+            if n.type == "GROUP" and n.select
+        ]
+        repo = Path(bpy.path.abspath(p.repository))
+
+        for t in selected_trees:
+            utils.push_node_to_py(t, repo, True, p)
+
+        pushed_count = len(selected_trees)
+        if pushed_count == 1:
+            self.report({"INFO"}, f"{selected_trees[0].name} pushed")
+        else:
+            self.report({"INFO"}, f"{pushed_count} pushed trees")
+        return {"FINISHED"}
+
+
+class ARBORIST_OT_pull_node_from_py(Operator):
+    """Overwrite the selected node with corresponding python file"""
+
+    bl_idname = "node.arborist_pull"
+    bl_label = "Pull Node Trees"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        p = props(context)
+        if not p.repository:
+            raise KeyError("No repository selected")
+        selected_trees = [
+            n.node_tree
+            for n in context.space_data.edit_tree.nodes
+            if n.type == "GROUP" and n.select
+        ]
+        repo = Path(bpy.path.abspath(p.repository))
+
+        for t in selected_trees:
+            utils.pull_node_from_py(t, repo, True)
+
+        pushed_count = len(selected_trees)
+        if pushed_count == 1:
+            self.report({"INFO"}, f"{selected_trees[0].name} pulled")
+        else:
+            self.report({"INFO"}, f"{pushed_count} pullled trees")
+        return {"FINISHED"}
+
+
+CLASSES = (
+    ARBORIST_OT_export_to_code,
+    ARBORIST_OT_run_script,
+    ARBORIST_OT_new_text,
+    ARBORIST_OT_push_node_to_py,
+    ARBORIST_OT_pull_node_from_py,
+)
 
 
 def register():
